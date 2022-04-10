@@ -4,12 +4,13 @@ using UnityEngine;
 
 public class PlayerController : MonoBehaviour
 {
-    [SerializeField] private float walkSpeed = 2;
-    [SerializeField] private float runSpeed = 4;
+    [SerializeField] public float walkSpeed = 2;
+    [SerializeField] public float runSpeed = 4;
     [SerializeField] public Transform playerCamera = null;
     [SerializeField] public float mouseSensitivity = 3.5f;
     [SerializeField] public bool lockCursor = true;
-    
+
+    private Player player;
     private float speed;
     private float cameraPitch = 0.0f;
     private Animator animator;
@@ -104,6 +105,50 @@ public class PlayerController : MonoBehaviour
         {
             grounded = true;
             animator.SetBool("grounded", grounded);
+        }
+    }
+
+    //Method is used to teleport to a band if it hasn't stuck to a teleportable object
+    public void TeleportToBand(Wristband band)
+    {
+        this.transform.position = band.GetCoords();
+        player.ReduceAmountThrown();
+    }
+
+    //Used to swap positions between teleportable object and player
+    public void SwapPositions(Wristband band)
+    {
+        Vector3 playerPos = this.transform.position; //saves player position
+        this.transform.position = band.GetAttachedObjectCoords();
+        band.GetAttachedObject().transform.position = playerPos;
+        
+        //Returns band to player if the object the band is attached to is not teleportable
+        if (!band.GetAttachedObject().CompareTag("Teleportable"))
+        {
+            band.UpdateAttachedObject(null);
+            band.UpdateThrown(false);
+            player.ReduceAmountThrown();
+        }
+        
+    }
+
+    //Used to swap positions between teleportable objects
+    public void SwapPositions(Wristband bandOne, Wristband bandTwo)
+    {
+        Vector3 objectOnePos = bandOne.GetAttachedObjectCoords(); //saves objectOne position
+        bandOne.GetAttachedObject().transform.position = bandTwo.GetAttachedObjectCoords();
+        bandTwo.GetAttachedObject().transform.position = objectOnePos;
+    }
+
+    //Used to return all bands the player has thrown out onto the field
+    public void ReturnBand()
+    {
+        player.getBands()[0].UpdateThrown(false);
+        player.getBands()[0].UpdateAttachedObject(null);
+        if (player.getBands().Count == 2)
+        {
+            player.getBands()[1].UpdateThrown(false);
+            player.getBands()[1].UpdateAttachedObject(null);
         }
     }
 }
