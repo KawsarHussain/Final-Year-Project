@@ -1,15 +1,27 @@
 using System.Collections;
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 
 public class PlayerController : MonoBehaviour
 {
-    [SerializeField] public float walkSpeed = 2;
-    [SerializeField] public float runSpeed = 4;
+    [Header("Player Config")]
+    [SerializeField] public float walkSpeed;
+    [SerializeField] public float runSpeed;
+    [SerializeField] public float throwForce;
+    [SerializeField] public float throwUpwardForce;
     [SerializeField] public Transform playerCamera = null;
     [SerializeField] public float mouseSensitivity = 3.5f;
     [SerializeField] public bool lockCursor = true;
+    public List<Wristband> bands = new List<Wristband>();
 
+    [Header("Interact Config")]
+    [SerializeField] private TextMeshPro useText;
+    [SerializeField] private float maxUseDistance = 5f;
+    [SerializeField] LayerMask useLayers;
+
+    public Transform throwPointOne = null;
+    public Transform throwPointTwo = null;
     private Player player;
     private float speed;
     private float cameraPitch = 0.0f;
@@ -17,9 +29,20 @@ public class PlayerController : MonoBehaviour
     private Rigidbody rb;
     private bool grounded = true;
 
+
     // Start is called before the first frame update
     void Start()
     {
+        player = new Player(2);
+        bands.Add(GameObject.Find("Band1").GetComponent<Wristband>());
+        if (player.GetAmountOfBands() == 2)
+        {
+            bands.Add(GameObject.Find("Band2").GetComponent<Wristband>());
+        }
+        throwForce = 35;
+        throwUpwardForce = 0;
+        walkSpeed = player.GetWalkSpeed();
+        runSpeed = player.GetRunSpeed();
         speed = walkSpeed;
         animator = GetComponent<Animator>();
         rb = GetComponent<Rigidbody>();
@@ -40,6 +63,8 @@ public class PlayerController : MonoBehaviour
         UpdateVelocity();
 
         InputHandle();
+
+        UpdateText();
     }
 
     private void UpdateVelocity()
@@ -96,8 +121,116 @@ public class PlayerController : MonoBehaviour
         {
             speed = walkSpeed;
         }
+
+        //Handling throwing
+        if(Input.GetButtonDown("Fire1") && !bands[0].GetThrown())
+        {
+            ThrowBand(1);
+        }
+
+        if (Input.GetButtonDown("Fire2") && !bands[1].GetThrown())
+        {
+            ThrowBand(2);
+        }
+
+        //Handles opening doors
+        if (Input.GetButtonDown("Interact"))
+        {
+            if (Physics.Raycast(playerCamera.position, playerCamera.forward, out RaycastHit hit, maxUseDistance, useLayers))
+            {
+                //If raycast has hits a door component
+                if (hit.collider.TryGetComponent<Door>(out Door door))
+                {
+                    if (door.GetOpen()) door.Close();
+                    else door.Open(transform.position);
+                }
+            }
+        }
     }
 
+    //This method updates text on the screen
+    private void UpdateText()
+    {
+        if (Physics.Raycast(playerCamera.position, playerCamera.forward, out RaycastHit hit, maxUseDistance, useLayers) 
+            && hit.collider.TryGetComponent<Door>(out Door door))
+        {
+            if (door.GetOpen()) useText.SetText("Close Door \"E\"");
+            else useText.SetText("Open Door \"E\"");
+            useText.gameObject.SetActive(true);
+            //offsets text to prevent Z-fighting
+            useText.transform.position = hit.point - (hit.point - playerCamera.position).normalized * 0.01f;
+            useText.transform.rotation = Quaternion.LookRotation((hit.point - playerCamera.position).normalized);
+
+        }
+        else
+        {
+            useText.gameObject.SetActive(false);
+        }
+    }
+
+    private void ThrowBand(int n)
+    {
+        bool status;
+        Vector3 pos = throwPointOne.position;
+        if (n == 1) 
+        {
+            status = ThrowBandOne();
+            if (!status) return;
+        }
+
+        else if (n == 2)
+        {
+            status = ThrowBandTwo();
+            if (!status) return;
+            pos = throwPointTwo.position;
+        }
+
+
+        GameObject projectile = Instantiate(bands[n - 1].GetBandObject(), pos, playerCamera.rotation);
+
+        Rigidbody projectileRb = projectile.GetComponent<Rigidbody>();
+
+
+        Vector3 forceDirection = playerCamera.transform.forward;
+
+        RaycastHit hit; // raycast created through the centre of the screen
+
+        //calculate the correct direction that band should be thrown
+        if (Physics.Raycast(playerCamera.position, playerCamera.forward, out hit, 500f))
+        {
+            forceDirection = (hit.point - pos).normalized;
+        }
+
+        Vector3 force = forceDirection * throwForce + transform.up * throwUpwardForce;
+        projectile.transform.parent = null;
+
+        projectileRb.AddForce(force, ForceMode.Impulse);        
+    }
+
+    //Player is going to have two bands so seperate methods are going to be made for them
+    public bool ThrowBandOne()
+    {
+        //if first band hasn't been thrown
+        if (!bands[0].GetThrown())
+        {
+            bands[0].UpdateThrown(true);
+            player.IncreaseAmountThrown();
+            return true;
+        }
+        return false;
+    }
+
+    public bool ThrowBandTwo()
+    {
+        if (bands.Count != 2) return false;
+        if (!bands[1].GetThrown())
+        {
+            bands[1].UpdateThrown(true);
+            player.IncreaseAmountThrown();
+            return true;
+        }
+        return false;
+    }
     //Method handles what happens when you enter into collisions
     private void OnCollisionEnter(Collision collision)
     {
@@ -143,12 +276,12 @@ public class PlayerController : MonoBehaviour
     //Used to return all bands the player has thrown out onto the field
     public void ReturnBand()
     {
-        player.getBands()[0].UpdateThrown(false);
-        player.getBands()[0].UpdateAttachedObject(null);
-        if (player.getBands().Count == 2)
+        bands[0].UpdateThrown(false);
+        bands[0].UpdateAttachedObject(null);
+        if (bands.Count == 2)
         {
-            player.getBands()[1].UpdateThrown(false);
-            player.getBands()[1].UpdateAttachedObject(null);
+            bands[1].UpdateThrown(false);
+            bands[1].UpdateAttachedObject(null);
         }
     }
 }

@@ -5,20 +5,43 @@ using UnityEngine;
 public class Wristband : MonoBehaviour
 {
     private bool thrown;
-    private Vector3 coords = new Vector3();
+    public GameObject band;
     private GameObject attachedObject;
+    private bool objectHit;
+    private Rigidbody rb;
 
-    public Wristband()
+    void Start()
     {
+        objectHit = false;
+        rb = GetComponent<Rigidbody>();
         thrown = false;
         attachedObject = null;
     }
 
-    public bool GetThrown() { return thrown; } 
+    private void OnCollisionEnter(Collision collision)
+    {
+        if (collision.gameObject.CompareTag("Player"))
+        {
+            Physics.IgnoreCollision(collision.collider, GetComponent<Collider>());
+            return;
+        }
+
+        if (objectHit) return;
+        else objectHit = true;
+
+        rb.isKinematic = true;
+
+        transform.SetParent(collision.transform);
+        attachedObject = collision.gameObject;
+
+    }
+
+    public bool GetThrown() { return thrown; }
 
     public void UpdateThrown(bool state) { thrown = state; }
 
-    public Vector3 GetCoords() { return coords; }
+    public GameObject GetBandObject() { return band.gameObject; }
+    public Vector3 GetCoords() { return band.transform.position; }
 
     public GameObject GetAttachedObject() { return attachedObject; }
 
@@ -26,17 +49,7 @@ public class Wristband : MonoBehaviour
 
     public Vector3 GetAttachedObjectCoords() { return attachedObject.transform.position; }
 
-    public void UpdateCoords(Vector3 newCoords) { coords = newCoords; }
+    public void UpdateCoords(Vector3 newCoords) { band.transform.position = newCoords; }
 
-    // Start is called before the first frame update
-    void Start()
-    {
-        
-    }
 
-    // Update is called once per frame
-    void Update()
-    {
-        
-    }
 }

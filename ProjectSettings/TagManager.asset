@@ -6,11 +6,12 @@ TagManager:
   tags:
   - Ground
   - Teleportable
+  - Band
   layers:
   - Default
   - TransparentFX
   - Ignore Raycast
-  - 
+  - Usable
   - Water
   - UI
   - 
