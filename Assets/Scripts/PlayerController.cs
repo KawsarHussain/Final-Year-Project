@@ -14,6 +14,7 @@ public class PlayerController : MonoBehaviour
     [SerializeField] public float mouseSensitivity = 3.5f;
     [SerializeField] public bool lockCursor = true;
     public List<Wristband> bands = new List<Wristband>();
+    private List<GameObject> bandObjects = new List<GameObject>();
 
     [Header("Interact Config")]
     [SerializeField] private TextMeshPro useText;
@@ -35,9 +36,11 @@ public class PlayerController : MonoBehaviour
     {
         player = new Player(2);
         bands.Add(GameObject.Find("Band1").GetComponent<Wristband>());
+        bandObjects.Add(null);
         if (player.GetAmountOfBands() == 2)
         {
             bands.Add(GameObject.Find("Band2").GetComponent<Wristband>());
+            bandObjects.Add(null);
         }
         throwForce = 35;
         throwUpwardForce = 0;
@@ -64,7 +67,7 @@ public class PlayerController : MonoBehaviour
 
         InputHandle();
 
-        UpdateText();
+        //UpdateText();
     }
 
     private void UpdateVelocity()
@@ -106,7 +109,7 @@ public class PlayerController : MonoBehaviour
         //If spacebar is pressed, the character will jump
         if (Input.GetButtonDown("Jump") && grounded == true)
         {
-            rb.AddForce(new Vector3(0, 5, 0), ForceMode.Impulse);
+            rb.AddForce(new Vector3(0, 250, 0));
             grounded = false;
             animator.SetBool("grounded", grounded);
         }
@@ -123,14 +126,16 @@ public class PlayerController : MonoBehaviour
         }
 
         //Handling throwing
-        if(Input.GetButtonDown("Fire1") && !bands[0].GetThrown())
+        if(Input.GetButtonDown("Fire1"))
         {
-            ThrowBand(1);
+            if (bands[0].GetThrown()) TeleportToBand(0);
+            else ThrowBand(0);
         }
 
-        if (Input.GetButtonDown("Fire2") && !bands[1].GetThrown())
+        if (Input.GetButtonDown("Fire2"))
         {
-            ThrowBand(2);
+            if (bands[1].GetThrown()) TeleportToBand(1);
+            else ThrowBand(1);
         }
 
         //Handles opening doors
@@ -172,13 +177,13 @@ public class PlayerController : MonoBehaviour
     {
         bool status;
         Vector3 pos = throwPointOne.position;
-        if (n == 1) 
+        if (n == 0) 
         {
             status = ThrowBandOne();
             if (!status) return;
         }
 
-        else if (n == 2)
+        else if (n == 1)
         {
             status = ThrowBandTwo();
             if (!status) return;
@@ -186,7 +191,8 @@ public class PlayerController : MonoBehaviour
         }
 
 
-        GameObject projectile = Instantiate(bands[n - 1].GetBandObject(), pos, playerCamera.rotation);
+        GameObject projectile = Instantiate(bands[n].GetBandObject(), pos, playerCamera.rotation);
+        bandObjects[n] = projectile;
 
         Rigidbody projectileRb = projectile.GetComponent<Rigidbody>();
 
@@ -242,46 +248,47 @@ public class PlayerController : MonoBehaviour
     }
 
     //Method is used to teleport to a band if it hasn't stuck to a teleportable object
-    public void TeleportToBand(Wristband band)
+    public void TeleportToBand(int n)
     {
-        this.transform.position = band.GetCoords();
+        this.transform.position = bandObjects[n].transform.position;
+        Destroy(bandObjects[n]);
+        bands[n].UpdateThrown(false);
         player.ReduceAmountThrown();
     }
 
     //Used to swap positions between teleportable object and player
-    public void SwapPositions(Wristband band)
+    public void SwapPositions(int n)
     {
         Vector3 playerPos = this.transform.position; //saves player position
-        this.transform.position = band.GetAttachedObjectCoords();
-        band.GetAttachedObject().transform.position = playerPos;
-        
-        //Returns band to player if the object the band is attached to is not teleportable
-        if (!band.GetAttachedObject().CompareTag("Teleportable"))
-        {
-            band.UpdateAttachedObject(null);
-            band.UpdateThrown(false);
-            player.ReduceAmountThrown();
-        }
-        
+        this.transform.position = bandObjects[n].transform.position;
+        bandObjects[n].transform.position = playerPos;   
     }
 
     //Used to swap positions between teleportable objects
-    public void SwapPositions(Wristband bandOne, Wristband bandTwo)
+    public void SwapPositions()
     {
-        Vector3 objectOnePos = bandOne.GetAttachedObjectCoords(); //saves objectOne position
-        bandOne.GetAttachedObject().transform.position = bandTwo.GetAttachedObjectCoords();
-        bandTwo.GetAttachedObject().transform.position = objectOnePos;
+        Vector3 objectOnePos = bandObjects[0].GetComponentInParent<GameObject>().transform.position; //saves objectOne position
+        bandObjects[0].GetComponentInParent<GameObject>().transform.position = bandObjects[1].GetComponentInParent<GameObject>().transform.position;
+        bandObjects[1].GetComponentInParent<GameObject>().transform.position = objectOnePos;
     }
 
     //Used to return all bands the player has thrown out onto the field
     public void ReturnBand()
     {
-        bands[0].UpdateThrown(false);
-        bands[0].UpdateAttachedObject(null);
+        if (bands[0].GetThrown())
+        {
+            bands[0].UpdateThrown(false);
+            Destroy(bandObjects[0]);
+            player.ReduceAmountThrown();
+        }
         if (bands.Count == 2)
         {
-            bands[1].UpdateThrown(false);
-            bands[1].UpdateAttachedObject(null);
+            if (bands[1].GetThrown())
+            {
+                bands[1].UpdateThrown(false);
+                Destroy(bandObjects[1]);
+                player.ReduceAmountThrown();
+            }
         }
     }
 }
