@@ -30,7 +30,6 @@ public class Wristband : MonoBehaviour
         else objectHit = true;
 
         rb.isKinematic = true;
-
         transform.SetParent(collision.transform);
         attachedObject = collision.gameObject;
 

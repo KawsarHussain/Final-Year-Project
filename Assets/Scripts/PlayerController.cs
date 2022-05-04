@@ -29,6 +29,7 @@ public class PlayerController : MonoBehaviour
     private Animator animator;
     private Rigidbody rb;
     private bool grounded = true;
+    private Vector3 teleportOffset = new Vector3(0, 0.415f, 0);
 
 
     // Start is called before the first frame update
@@ -128,14 +129,32 @@ public class PlayerController : MonoBehaviour
         //Handling throwing
         if(Input.GetButtonDown("Fire1"))
         {
-            if (bands[0].GetThrown()) TeleportToBand(0);
+            if (bands[0].GetThrown())
+            {
+                if (bandObjects[0].transform.parent == null || !bandObjects[0].transform.parent.CompareTag("Teleportable")) TeleportToBand(0);
+                else if (bandObjects[0].transform.parent.CompareTag("Teleportable")) SwapPositions(0);
+            }
             else ThrowBand(0);
         }
 
         if (Input.GetButtonDown("Fire2"))
         {
-            if (bands[1].GetThrown()) TeleportToBand(1);
+            if (bands[1].GetThrown())
+            {
+                if (bandObjects[1].transform.parent == null || !bandObjects[1].transform.parent.CompareTag("Teleportable")) TeleportToBand(1);
+                else if (bandObjects[1].transform.parent.CompareTag("Teleportable")) SwapPositions(1);
+            }
             else ThrowBand(1);
+        }
+
+        if (Input.GetButtonDown("Reload")) ReturnBand();
+
+        if (Input.GetButtonDown("Swap"))
+        {
+            if (bandObjects[0].transform.parent.CompareTag("Teleportable") && bandObjects[1].transform.parent.CompareTag("Teleportable"))
+            {
+                SwapPositions();
+            }
         }
 
         //Handles opening doors
@@ -256,20 +275,26 @@ public class PlayerController : MonoBehaviour
         player.ReduceAmountThrown();
     }
 
+    private void setKinematic(int n, bool value)
+    {
+        bandObjects[n].transform.parent.GetComponent<Rigidbody>().isKinematic = value;
+    }
+
     //Used to swap positions between teleportable object and player
     public void SwapPositions(int n)
     {
+        /*setKinematic(n, false);*/
         Vector3 playerPos = this.transform.position; //saves player position
-        this.transform.position = bandObjects[n].transform.position;
-        bandObjects[n].transform.position = playerPos;   
+        this.transform.position = bandObjects[n].transform.parent.position;
+        bandObjects[n].transform.parent.position = playerPos + teleportOffset;
     }
 
     //Used to swap positions between teleportable objects
     public void SwapPositions()
     {
-        Vector3 objectOnePos = bandObjects[0].GetComponentInParent<GameObject>().transform.position; //saves objectOne position
-        bandObjects[0].GetComponentInParent<GameObject>().transform.position = bandObjects[1].GetComponentInParent<GameObject>().transform.position;
-        bandObjects[1].GetComponentInParent<GameObject>().transform.position = objectOnePos;
+        Vector3 objectOnePos = bandObjects[0].transform.parent.position; //saves objectOne position
+        bandObjects[0].transform.parent.position = bandObjects[1].transform.parent.position + teleportOffset;
+        bandObjects[1].transform.parent.position = objectOnePos + teleportOffset;
     }
 
     //Used to return all bands the player has thrown out onto the field
