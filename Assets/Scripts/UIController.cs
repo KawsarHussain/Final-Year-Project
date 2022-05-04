@@ -17,6 +17,8 @@ public class UIController : MonoBehaviour
     [SerializeField] private TextMeshPro LMBText;
     [SerializeField] private Image RMBIcon;
     [SerializeField] private TextMeshPro RMBText;
+    [SerializeField] private Image SwapIcon;
+    [SerializeField] private Image ReloadIcon;
 
     [Header("Player")]
     [SerializeField] private PlayerController player;
@@ -25,6 +27,8 @@ public class UIController : MonoBehaviour
     void Start()
     {
         player = GameObject.Find("Robot Kyle").GetComponent<PlayerController>();
+        SwapIcon.enabled = false;
+        ReloadIcon.enabled = false;
     }
 
     // Update is called once per frame
@@ -34,5 +38,11 @@ public class UIController : MonoBehaviour
         else LMBIcon.sprite = throwSprite;
         if (player.bands[1].GetThrown()) RMBIcon.sprite = teleportSprite;
         else RMBIcon.sprite = throwSprite;
+        if (player.player.GetAmountOfBands() > 0) ReloadIcon.enabled = true;
+        else ReloadIcon.enabled = false;
+
+        if (player.swappable) SwapIcon.enabled = true;
+        else SwapIcon.enabled = false;
+
     }
 }

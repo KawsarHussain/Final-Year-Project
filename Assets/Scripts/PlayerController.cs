@@ -6,6 +6,7 @@ using UnityEngine;
 public class PlayerController : MonoBehaviour
 {
     [Header("Player Config")]
+    [SerializeField] private int amountOfBands;
     [SerializeField] public float walkSpeed;
     [SerializeField] public float runSpeed;
     [SerializeField] public float throwForce;
@@ -15,6 +16,7 @@ public class PlayerController : MonoBehaviour
     [SerializeField] public bool lockCursor = true;
     public List<Wristband> bands = new List<Wristband>();
     private List<GameObject> bandObjects = new List<GameObject>();
+    public bool swappable = false;
 
     [Header("Interact Config")]
     [SerializeField] private TextMeshPro useText;
@@ -23,7 +25,7 @@ public class PlayerController : MonoBehaviour
 
     public Transform throwPointOne = null;
     public Transform throwPointTwo = null;
-    private Player player;
+    public Player player;
     private float speed;
     private float cameraPitch = 0.0f;
     private Animator animator;
@@ -35,7 +37,7 @@ public class PlayerController : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        player = new Player(2);
+        player = new Player(amountOfBands);
         bands.Add(GameObject.Find("Band1").GetComponent<Wristband>());
         bandObjects.Add(null);
         if (player.GetAmountOfBands() == 2)
@@ -153,7 +155,12 @@ public class PlayerController : MonoBehaviour
         {
             if (bandObjects[0].transform.parent.CompareTag("Teleportable") && bandObjects[1].transform.parent.CompareTag("Teleportable"))
             {
+                swappable = true;
                 SwapPositions();
+            }
+            else
+            {
+                swappable = false;
             }
         }
 

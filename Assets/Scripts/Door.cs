@@ -5,13 +5,16 @@ using UnityEngine;
 public class Door : MonoBehaviour
 {
 
-    private bool isOpen = true;
+    private bool isOpen = false;
     [SerializeField] private bool isSlidingDoor = true;
     [SerializeField] private float speed = 1f;
+    [SerializeField] private GameObject[] requirements;
+    [SerializeField] private bool[] isTriggered;
+    private int counter = 0;
 
     [Header("Sliding Config")]
-    [SerializeField] private Vector3 slideDirection = Vector3.back;
-    [SerializeField] private float slideAmount = 1.9f; //slightly smaller than door size to prevent Z-fighting
+    [SerializeField] private Vector3 slideDirection = Vector3.right;
+    [SerializeField] private float slideAmount = 14.9f; //slightly smaller than door size to prevent Z-fighting
 
     private Vector3 startPosition;
 
@@ -19,7 +22,23 @@ public class Door : MonoBehaviour
 
     private void Awake()
     {
+        isTriggered = new bool[requirements.Length];
+        for (int i = 0; i < isTriggered.Length; i++)
+        {
+            isTriggered[i] = false;
+        }
         startPosition = transform.position;
+    }
+
+    private void Update()
+    {
+        for (int i = 0; i < requirements.Length; i++)
+        {
+            isTriggered[i] = requirements[i].GetComponent<PressurePlate>().GetPressed();
+            if (isTriggered[i]) counter += 1;
+            else counter -= 1;
+        }
+        if (counter == requirements.Length) Open(GameObject.Find("Robot Kyle").transform.position);
     }
 
     public bool GetOpen() { return isOpen; }

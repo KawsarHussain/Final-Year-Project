@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class TutorialController : MonoBehaviour
 {
@@ -34,5 +35,7 @@ public class TutorialController : MonoBehaviour
 
 
         if (popUpIndex == 5 || popUpIndex == 6) if (Input.GetKeyDown(KeyCode.Mouse0)) popUpIndex++;
+
+        if (popUpIndex == 7) SceneManager.LoadScene(0);
     }
 }
